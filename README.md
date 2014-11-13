@@ -1,7 +1,7 @@
 schemepunk
 ==========
 
-Tetris in Scheme! Barely.
+ASCII Tetris in Scheme!
 
 Just load the code file and run (play-game). To move, type j, k, l or i, and hit enter. That's all there is!
 
