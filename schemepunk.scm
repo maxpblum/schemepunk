@@ -191,12 +191,20 @@
     (list (rotate-right (shape state)) (shape-dx state) (shape-dy state) (grid state))
     #f))
 
-(define (move move-fn state)
-  (let ((result (move-fn state)))
-    (let ((new-state (if result result state)))
-      (if (null? (shape state))
-        (list (random-shape) 5 1 (grid new-state))
-        new-state))))
+(define (drop state)
+  (let ((next-state (move-down state)))
+    (if (= (shape-dy next-state) 0)
+      next-state
+      (drop next-state))))
+
+(define (move move-fn)
+  (if (equal? move-fn 'quit)
+    'quit
+    (let ((result (move-fn state)))
+      (let ((new-state (if result result state)))
+        (if (null? (shape state))
+          (set! state (list (random-shape) 5 1 (grid new-state)))
+          (set! state new-state))))))
 
 (define (fn-from-input)
   (let ((input (read)))
@@ -204,6 +212,8 @@
           ((eq? input 'k) move-down)
           ((eq? input 'l) move-right)
           ((eq? input 'i) rotation)
+          ((eq? input 'q) 'quit)
+          ((eq? input 'd) drop)
           (else (fn-from-input)))))
 
 (define (random-shape)
@@ -236,12 +246,24 @@
           (to-add (cdr result)))
       (add-empty to-add new-grid))))
 
+(define state (begin-state))
+
 (define (play-game)
-  (define (game-loop state)
+  (define (game-loop)
     (begin
       (print-state state)
-      (game-loop (move (fn-from-input) state))))
-  (game-loop (begin-state)))
+      (let ((fn (fn-from-input)))
+       (if (equal? fn 'quit)
+          (begin
+            (stop-timer)
+            (display "You're done!\n"))
+          (begin
+            (move fn)
+            (game-loop))))))
+  (begin
+    (start-timer)
+    (set! state (begin-state))
+    (game-loop)))
   
 (define clear-testing-state
   (list '() 0 0 (list
@@ -271,3 +293,22 @@
                   full-row
                   full-row
                   full-row)))
+
+(define timer-going #f)
+
+(define notches 0)
+
+(define (start-timer)
+  (define (notch-timer)
+    (if timer-going
+      (begin
+        (timer notch-timer 1)
+        (move move-down)
+        (print-state state)
+        (inc! notches))))
+  (begin
+    (set! timer-going #t)
+    (set! notches 0)
+    (notch-timer)))
+
+(define (stop-timer) (set! timer-going #f))
